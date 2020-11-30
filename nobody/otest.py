@@ -13,7 +13,6 @@ from functools import wraps
 from types import FunctionType
 from typing import List
 
-from nobody.builtin import get_target_py
 from nobody.design_pattern import singleton
 from nobody.log import logger, setup_logger
 
@@ -74,6 +73,10 @@ class TestStatus:
         return self
 
 
+class TestView:
+    """测试视图"""
+
+
 # endregion
 
 # region 装饰器
@@ -107,6 +110,10 @@ def require_status(status: TestStatus, value=None):
         return wrapper
 
     return deco
+
+
+def as_test(func):
+    """"""
 
 
 # endregion
@@ -240,6 +247,8 @@ class TestListener:
 
 def test(o=None, fn='test', *args, **kwargs):
     """"""
+    if o and isinstance(o, type):
+        o = object.__new__(o)
     if isinstance(fn, list):
         for _fn in fn:
             test(o, _fn, *args, **kwargs)
@@ -311,6 +320,83 @@ context = _ContextManager()
 
 # endregion
 
+
+# region 报告
+
+class TestReport(TestListener):
+    """测试结果集"""
+
+    def __init__(self):
+        super().__init__()
+        self._cur = TestResult()  # 当前结果
+        self.append(self._cur)
+        self.listeners = []
+
+    def __start_new(self):
+        result = TestResult()
+        self.append(result)
+        self._cur = result
+        return result
+
+    def start(self, test, *args, **kwargs):
+        self._cur.begin_time = datetime.now()
+        message = f'start test: {kwargs.get("filename")}{", " + test if test else ""}'
+        # self.logs.append(TestLog(**kwargs).update(level='info', test=test, message=message))
+        for listener in self.listeners:
+            listener.on_start(test=test, message=message, *args, **kwargs)
+
+    def success(self, *args, **kwargs):
+        self._cur.status = self._cur.status or 'passed'
+        for listener in self.listeners:
+            listener.on_passed(*args, **kwargs)
+
+    def fail(self, *args, **kwargs):
+        self._cur.status = self._cur.status or 'failed'
+        self._cur.error = kwargs.get('message')
+        self._cur.error_stack = kwargs.get('error_stack')
+        for listener in self.listeners:
+            listener.on_failed(*args, **kwargs)
+
+    def error(self, *args, **kwargs):
+        self._cur.status = self._cur.status or 'error'
+        self._cur.error = kwargs.get('message')
+        self._cur.error_stack = kwargs.get('error_stack')
+        for listener in self.listeners:
+            listener.on_error(*args, **kwargs)
+
+    def info(self, *args, **kwargs):
+        # self.logs.append(TestLog(**kwargs).update(level='info'))
+        for listener in self.listeners:
+            listener.on_info(*args, **kwargs)
+
+    def warn(self, *args, **kwargs):
+        """"""
+        for listener in self.listeners:
+            listener.on_warning(*args, **kwargs)
+
+    def block(self, *args, **kwargs):
+        self._cur.status = self._cur.status or 'blocked'
+        self._cur.error = kwargs.get('message')
+        self._cur.error_stack = kwargs.get('error_stack')
+        for listener in self.listeners:
+            listener.on_blocked(*args, **kwargs)
+
+    def skip(self, *args, **kwargs):
+        self._cur.status = self._cur.status or 'blocked'
+        # self.logs.append(TestLog(**kwargs).update(level='skipped'))
+        for listener in self.listeners:
+            listener.on_skipped(*args, **kwargs)
+
+    def finish(self, test, *args, **kwargs):
+        cost = self._cur.cost = round(time.time() - self._cur.begin_time.timestamp(), 3)
+        message = f'finish test: {test.__name__}, cost: {cost}s'
+        for listener in self.listeners:
+            listener.on_finished(test, *args, status=self._cur.status, message=message, **kwargs)
+        self.__start_new()  # 完成子单元测试，创建新结果
+
+
+# endregion
+
 # region Errors
 
 
@@ -343,7 +429,6 @@ class TestSkippedError(TestError):
 
 
 # endregion
-
 
 # region Utils
 

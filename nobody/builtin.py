@@ -489,11 +489,13 @@ class Py(Path):
                 continue
             if name == 'setup':
                 setup = value
-            elif name == 'cleanup':
+            elif name == 'teardown':
                 teardown = value
             elif name.startswith('test_'):
                 tests.append(m)
             elif name == 'setup_class':
+                setup_class = value
+            elif name == 'teardown_class':
                 setup_class = value
         return setup_class, setup, tests, teardown, teardown_class
 

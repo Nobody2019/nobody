@@ -20,10 +20,9 @@ from functools import wraps
 from queue import Queue
 from typing import Optional, List, Dict
 
-from tsrunner.error import BaseError
-from tsrunner.utils.log import logger
-from tsrunner.utils.schedule import Schedule
-from tsrunner.utils.thread import thread
+from nobody.decorators import thread
+from nobody.log import logger
+from nobody.schedule import Schedule
 
 RUNNING = 'running'  # 执行中
 TERMINATED = 'terminated'  # 终止
@@ -480,7 +479,7 @@ class TaskListener:
         pass
 
 
-class TaskError(BaseError):
+class TaskError(Exception):
     """
     任务异常
     """

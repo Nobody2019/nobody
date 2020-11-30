@@ -7,9 +7,7 @@
 @Desc:
 """
 
-import threading
-
-from tsrunner.utils.thread import synchronized
+from nobody.decorators import synchronized
 
 
 def singleton(cls):

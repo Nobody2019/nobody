@@ -1,0 +1,4 @@
+scikit-image
+requests
+lxml
+opencv-python

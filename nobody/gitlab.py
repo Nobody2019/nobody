@@ -13,8 +13,8 @@ import requests
 from requests import HTTPError
 
 # Actions
-from tsrunner.utils.log import logger
-from tsrunner.utils.o import get
+from nobody.log import logger
+from nobody import get
 
 _LIST = 0
 _GET = 1
